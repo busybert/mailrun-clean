@@ -1,34 +1,36 @@
 // src/lib/stripeCheckout.js
 
-// ✅ This MUST be your actual Render URL:
+// Your live Render server:
 const API_BASE_URL = "https://mailrun-stripe-server.onrender.com";
 
+// itemsToCheckout is exactly what you pass from Pricing.jsx
+// { mode, lineItems, discounts?, successUrl, cancelUrl }
 export async function redirectToCheckout(itemsToCheckout) {
   try {
     const response = await fetch(`${API_BASE_URL}/api/checkout`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify({ items: itemsToCheckout })
+      // Send the data exactly as-is:
+      body: JSON.stringify(itemsToCheckout),
     });
-
-    if (!response.ok) {
-      const data = await response.json().catch(() => ({}));
-      throw new Error(data.error || "Failed to create checkout session");
-    }
 
     const data = await response.json();
 
-    if (!data.url) {
-      throw new Error("No checkout URL returned from server");
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to create checkout session");
     }
 
-    // Redirect to Stripe Checkout
+    if (!data.url) {
+      throw new Error("Stripe did not return a checkout URL");
+    }
+
+    // Redirect user to Stripe checkout page
     window.location.href = data.url;
+
   } catch (error) {
     console.error("redirectToCheckout error:", error);
-    // Let the Pricing component show your toast
-    throw error;
+    throw error; // Let Pricing.jsx show your toast
   }
 }
