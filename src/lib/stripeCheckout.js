@@ -1,7 +1,7 @@
 // src/lib/stripeCheckout.js
 
 // Your live Render server:
-const API_BASE_URL = "https://mailrun-stripe-server.onrender.com";
+const API_BASE_URL = "https://YOUR-BACKEND-NAME.onrender.com";
 
 // itemsToCheckout is exactly what you pass from Pricing.jsx
 // { mode, lineItems, discounts?, successUrl, cancelUrl }
