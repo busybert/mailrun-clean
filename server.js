@@ -19,20 +19,21 @@ app.use(
 app.use(express.json());
 
 // --------------------------------------------------
-// CHECKOUT SESSION (for both one-time + subscriptions)
+// CHECKOUT SESSION (one-time + subscription)
 // --------------------------------------------------
 app.post("/api/checkout", async (req, res) => {
   try {
-    const { priceId, mode, discountCode } = req.body;
+    // FIX: Accept `coupon` because frontend sends `coupon`
+    const { priceId, mode, coupon } = req.body;
 
     if (!priceId || !mode) {
       return res.status(400).json({ error: "Missing priceId or mode" });
     }
 
-    // CREATE DISCOUNT ARRAY ONLY IF A COUPON IS PROVIDED
+    // Apply coupon if provided
     let discounts = [];
-    if (discountCode) {
-      discounts.push({ coupon: discountCode });
+    if (coupon) {
+      discounts.push({ coupon });
     }
 
     const session = await stripe.checkout.sessions.create({
@@ -49,6 +50,7 @@ app.post("/api/checkout", async (req, res) => {
     });
 
     res.json({ url: session.url });
+
   } catch (err) {
     console.log("Stripe Error:", err);
     res.status(500).json({ error: err.message });
