@@ -1,98 +1,67 @@
 import { useState } from "react";
 import { redirectToCheckout } from "../lib/stripeCheckout";
 
-// ⭐ Allowed coupon price IDs
+// ONLY these price IDs allow coupons
 const COUPON_ALLOWED = [
-  "price_1SP72n2E8UrZzRbdz5FncYGG",   // Standard Pickup ($9)
-  "price_1SSv372E8UrZzRbdvB2HJ4VA"    // Amazon Pay-Per-Pickup ($9.99)
+  "price_1SP72n2E8UrZzRbdz5FncYGG",   // Standard Pickup (48 hrs)
+  "price_1SSv372E8UrZzRbdvB2HJ4VA"    // Amazon Pay-Per-Pickup
 ];
 
-// ⭐ Price IDs
-const PRICES = {
-  standard: "price_1SP72n2E8UrZzRbdz5FncYGG",
-  payPer: "price_1SSv372E8UrZzRbdvB2HJ4VA",
-  monthly: "price_1SSv5K2E8UrZzRbdVdPlsu9T",
-  annual: "price_1SSv6e2E8UrZzRbdVqkqKeFi"
-};
-
-export default function Pricing() {
+function Pricing() {
   const [selectedPrice, setSelectedPrice] = useState(null);
+  const [isSubscription, setIsSubscription] = useState(false);
   const [coupon, setCoupon] = useState("");
 
-  const cards = [
-    {
-      title: "Standard Pickup (48 hrs)",
-      price: "$9.00",
-      priceId: PRICES.standard
-    },
-    {
-      title: "Amazon Return – Pay Per Pickup",
-      price: "$9.99",
-      priceId: PRICES.payPer
-    },
-    {
-      title: "Amazon Returns – Subscribe Monthly",
-      price: "$19.99 / month",
-      priceId: PRICES.monthly
-    },
-    {
-      title: "Amazon Returns – Subscribe Yearly",
-      price: "$199.99 / year",
-      priceId: PRICES.annual
-    }
-  ];
+  // Determine Stripe mode
+  const getCheckoutMode = (priceId) => {
+    return priceId.includes("SSv5") || priceId.includes("SSv6")
+      ? "subscription"
+      : "payment";
+  };
 
   return (
-    <div className="w-full max-w-4xl mx-auto mt-10 px-4">
-      <h2 className="text-3xl font-bold mb-6 text-center">Pricing</h2>
+    <div className="pricing-container">
 
-      {/* Pricing cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {cards.map((card) => (
-          <div
-            key={card.priceId}
-            className={`border rounded-lg p-6 shadow-md cursor-pointer hover:shadow-xl transition ${
-              selectedPrice === card.priceId ? "border-yellow-500" : "border-gray-300"
-            }`}
-            onClick={() => setSelectedPrice(card.priceId)}
-          >
-            <h3 className="text-xl font-semibold">{card.title}</h3>
-            <p className="mt-2 text-gray-700">{card.price}</p>
-          </div>
-        ))}
-      </div>
+      {/* Render your pricing cards here (your existing layout) */}
+      {/* Each pricing box should call setSelectedPrice(priceId) */}
+      {/* and also setIsSubscription(true|false) */}
 
-      {/* If user has selected a pricing card */}
       {selectedPrice && (
-        <div className="mt-8">
-          {/* Coupon box only for 2 services */}
+        <div>
+
+          {/* COUPON BOX */}
           {COUPON_ALLOWED.includes(selectedPrice) && (
-            <input
-              type="text"
-              placeholder="Enter coupon code"
-              value={coupon}
-              onChange={(e) => setCoupon(e.target.value)}
-              className="w-full bg-white px-3 py-2 border rounded-md"
-            />
+            <div className="mt-4">
+              <input
+                type="text"
+                placeholder="Enter coupon code"
+                value={coupon}
+                onChange={(e) => setCoupon(e.target.value)}
+                className="w-full bg-white text-black px-3 py-2 border border-gray-300 rounded-md"
+              />
+            </div>
           )}
 
-          {/* Checkout button */}
+          {/* CHECKOUT BUTTON */}
           <button
             onClick={() =>
               redirectToCheckout({
                 priceId: selectedPrice,
-                coupon:
-                  COUPON_ALLOWED.includes(selectedPrice) && coupon.trim() !== ""
-                    ? coupon.trim()
-                    : null
+                mode: getCheckoutMode(selectedPrice),  // FIXED
+                coupon: COUPON_ALLOWED.includes(selectedPrice) ? coupon : null
               })
             }
-            className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-4 rounded-md w-full mt-4"
+            className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-md w-full mt-4"
           >
-            Continue to Checkout
+            {COUPON_ALLOWED.includes(selectedPrice)
+              ? "Continue with Coupon"
+              : "Continue to Checkout"}
           </button>
+
         </div>
       )}
     </div>
   );
 }
+
+export default Pricing;
