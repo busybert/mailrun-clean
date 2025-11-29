@@ -1,128 +1,98 @@
 import { useState } from "react";
-import redirectToCheckout from "../lib/stripeCheckout";
+import { redirectToCheckout } from "../lib/stripeCheckout";
 
-// Prices with optional coupons
+// ⭐ Allowed coupon price IDs
 const COUPON_ALLOWED = [
-  "price_1SP72n2E8UrZzRbdz5FncYGG",   // Standard 48h Pickup
-  "price_1SSv372E8UrZzRbdvB2HJ4VA"    // Amazon Pay-Per-Pickup
+  "price_1SP72n2E8UrZzRbdz5FncYGG",   // Standard Pickup ($9)
+  "price_1SSv372E8UrZzRbdvB2HJ4VA"    // Amazon Pay-Per-Pickup ($9.99)
 ];
 
-// PRICE IDs (you provided)
+// ⭐ Price IDs
 const PRICES = {
   standard: "price_1SP72n2E8UrZzRbdz5FncYGG",
-  amazonPayPer: "price_1SSv372E8UrZzRbdvB2HJ4VA",
-
-  subscribeMonthly: "price_1SSv5K2E8UrZzRbdVdPlsu9T",
-  subscribeYearly: "price_1SSv6e2E8UrZzRbdVqkqKeFi"
+  payPer: "price_1SSv372E8UrZzRbdvB2HJ4VA",
+  monthly: "price_1SSv5K2E8UrZzRbdVdPlsu9T",
+  annual: "price_1SSv6e2E8UrZzRbdVqkqKeFi"
 };
 
 export default function Pricing() {
+  const [selectedPrice, setSelectedPrice] = useState(null);
   const [coupon, setCoupon] = useState("");
 
+  const cards = [
+    {
+      title: "Standard Pickup (48 hrs)",
+      price: "$9.00",
+      priceId: PRICES.standard
+    },
+    {
+      title: "Amazon Return – Pay Per Pickup",
+      price: "$9.99",
+      priceId: PRICES.payPer
+    },
+    {
+      title: "Amazon Returns – Subscribe Monthly",
+      price: "$19.99 / month",
+      priceId: PRICES.monthly
+    },
+    {
+      title: "Amazon Returns – Subscribe Yearly",
+      price: "$199.99 / year",
+      priceId: PRICES.annual
+    }
+  ];
+
   return (
-    <div className="pricing-container grid gap-6">
+    <div className="w-full max-w-4xl mx-auto mt-10 px-4">
+      <h2 className="text-3xl font-bold mb-6 text-center">Pricing</h2>
 
-      {/* ----------------------------- */}
-      {/* STANDARD PICKUP CARD ($9.00) */}
-      {/* ----------------------------- */}
-      <div className="border p-4 rounded-lg shadow">
-        <h2 className="font-bold text-lg">Standard Pickup (48 hours)</h2>
-        <p className="text-gray-600">$9.00</p>
-
-        {COUPON_ALLOWED.includes(PRICES.standard) && (
-          <input
-            className="w-full bg-white px-3 py-2 border rounded-md mt-3"
-            placeholder="Enter coupon code"
-            value={coupon}
-            onChange={(e) => setCoupon(e.target.value)}
-          />
-        )}
-
-        <button
-          className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-md w-full mt-4"
-          onClick={() =>
-            redirectToCheckout({
-              priceId: PRICES.standard,
-              mode: "payment",
-              allowDiscount: COUPON_ALLOWED.includes(PRICES.standard)
-            })
-          }
-        >
-          Start Checkout
-        </button>
+      {/* Pricing cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {cards.map((card) => (
+          <div
+            key={card.priceId}
+            className={`border rounded-lg p-6 shadow-md cursor-pointer hover:shadow-xl transition ${
+              selectedPrice === card.priceId ? "border-yellow-500" : "border-gray-300"
+            }`}
+            onClick={() => setSelectedPrice(card.priceId)}
+          >
+            <h3 className="text-xl font-semibold">{card.title}</h3>
+            <p className="mt-2 text-gray-700">{card.price}</p>
+          </div>
+        ))}
       </div>
 
-      {/* ---------------------------------- */}
-      {/* AMAZON PAY-PER-PICKUP ($9.99) */}
-      {/* ---------------------------------- */}
-      <div className="border p-4 rounded-lg shadow">
-        <h2 className="font-bold text-lg">Amazon Return – Pay-Per-Pickup</h2>
-        <p className="text-gray-600">$9.99</p>
+      {/* If user has selected a pricing card */}
+      {selectedPrice && (
+        <div className="mt-8">
+          {/* Coupon box only for 2 services */}
+          {COUPON_ALLOWED.includes(selectedPrice) && (
+            <input
+              type="text"
+              placeholder="Enter coupon code"
+              value={coupon}
+              onChange={(e) => setCoupon(e.target.value)}
+              className="w-full bg-white px-3 py-2 border rounded-md"
+            />
+          )}
 
-        {COUPON_ALLOWED.includes(PRICES.amazonPayPer) && (
-          <input
-            className="w-full bg-white px-3 py-2 border rounded-md mt-3"
-            placeholder="Enter coupon"
-            value={coupon}
-            onChange={(e) => setCoupon(e.target.value)}
-          />
-        )}
-
-        <button
-          className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-md w-full mt-4"
-          onClick={() =>
-            redirectToCheckout({
-              priceId: PRICES.amazonPayPer,
-              mode: "payment",
-              allowDiscount: COUPON_ALLOWED.includes(PRICES.amazonPayPer)
-            })
-          }
-        >
-          Start Checkout
-        </button>
-      </div>
-
-      {/* ----------------------------- */}
-      {/* SUBSCRIPTION MONTHLY */}
-      {/* ----------------------------- */}
-      <div className="border p-4 rounded-lg shadow">
-        <h2 className="font-bold text-lg">Amazon Returns – Subscribe Monthly</h2>
-        <p className="text-gray-600">$19.99 / month</p>
-
-        <button
-          className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md w-full mt-4"
-          onClick={() =>
-            redirectToCheckout({
-              priceId: PRICES.subscribeMonthly,
-              mode: "subscription",
-              allowDiscount: false
-            })
-          }
-        >
-          Start Subscription
-        </button>
-      </div>
-
-      {/* ----------------------------- */}
-      {/* SUBSCRIPTION YEARLY */}
-      {/* ----------------------------- */}
-      <div className="border p-4 rounded-lg shadow">
-        <h2 className="font-bold text-lg">Amazon Returns – Subscribe Yearly</h2>
-        <p className="text-gray-600">$199.99 / year</p>
-
-        <button
-          className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md w-full mt-4"
-          onClick={() =>
-            redirectToCheckout({
-              priceId: PRICES.subscribeYearly,
-              mode: "subscription",
-              allowDiscount: false
-            })
-          }
-        >
-          Start Subscription
-        </button>
-      </div>
+          {/* Checkout button */}
+          <button
+            onClick={() =>
+              redirectToCheckout({
+                priceId: selectedPrice,
+                coupon:
+                  COUPON_ALLOWED.includes(selectedPrice) && coupon.trim() !== ""
+                    ? coupon.trim()
+                    : null
+              })
+            }
+            className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-4 rounded-md w-full mt-4"
+          >
+            Continue to Checkout
+          </button>
+        </div>
+      )}
     </div>
   );
 }
