@@ -4,52 +4,62 @@ import Stripe from "stripe";
 import cors from "cors";
 
 const app = express();
-
-// Load Stripe with your LIVE key
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-// Allow your React website to call this API
-app.use(cors({
-  origin: [
-    "https://mailrun-orlando.com",
-    "https://mailrun-clean.onrender.com",
-    "http://localhost:5173"
-  ],
-}));
+app.use(
+  cors({
+    origin: [
+      "https://mailrun-orlando.com",
+      "https://mailrun-clean.onrender.com",
+      "http://localhost:5173"
+    ],
+  })
+);
+
 app.use(express.json());
 
-// -----------------------------
-// CHECKOUT ROUTE
-// -----------------------------
+// --------------------------------------------------
+// CHECKOUT SESSION (for both one-time + subscriptions)
+// --------------------------------------------------
 app.post("/api/checkout", async (req, res) => {
   try {
-    const items = req.body.items;
+    const { priceId, mode, discountCode } = req.body;
 
-    if (!items || !items.mode || !items.lineItems) {
-      return res.status(400).json({ error: "Invalid request format" });
+    if (!priceId || !mode) {
+      return res.status(400).json({ error: "Missing priceId or mode" });
+    }
+
+    // CREATE DISCOUNT ARRAY ONLY IF A COUPON IS PROVIDED
+    let discounts = [];
+    if (discountCode) {
+      discounts.push({ coupon: discountCode });
     }
 
     const session = await stripe.checkout.sessions.create({
-      mode: items.mode,
-      line_items: items.lineItems,
-      discounts: items.discounts ?? [],
+      mode,
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1,
+        },
+      ],
+      discounts,
       success_url: `${process.env.FRONTEND_URL}/success`,
       cancel_url: `${process.env.FRONTEND_URL}/cancel`,
     });
 
-    return res.json({ url: session.url });
-  } catch (error) {
-    console.error("Stripe Error:", error);
-    return res.status(500).json({ error: error.message });
+    res.json({ url: session.url });
+  } catch (err) {
+    console.log("Stripe Error:", err);
+    res.status(500).json({ error: err.message });
   }
 });
 
-// -----------------------------
+// --------------------------------------------------
 app.get("/", (req, res) => {
   res.send("MailRun Stripe backend is running ✔ LIVE");
 });
 
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => {
-  console.log("Stripe server running on port", PORT);
-});
+app.listen(process.env.PORT || 10000, () =>
+  console.log("Stripe server running on port 10000")
+);
