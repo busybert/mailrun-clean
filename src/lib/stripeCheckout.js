@@ -1,36 +1,44 @@
 // src/lib/stripeCheckout.js
+import { loadStripe } from "@stripe/stripe-js";
 
-// Your live Render server:
-const API_BASE_URL = "https://YOUR-BACKEND-NAME.onrender.com";
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_API);
 
-// itemsToCheckout is exactly what you pass from Pricing.jsx
-// { mode, lineItems, discounts?, successUrl, cancelUrl }
-export async function redirectToCheckout(itemsToCheckout) {
+export async function redirectToCheckout({ priceId, coupon }) {
+  const stripe = await stripePromise;
+
+  // Decide if coupon is allowed
+  const couponAllowedPrices = [
+    "price_1SP72n2E8UrZzRbdz5FncYGG", // Standard Pickup
+    "price_1SSv372E8UrZzRbdvB2HJ4VA" // Amazon Pay-Per Pickup
+  ];
+
+  const items = {
+    mode: "payment",
+    lineItems: [{ price: priceId, quantity: 1 }],
+    discounts: []
+  };
+
+  // Add coupon ONLY if allowed & entered
+  if (coupon && coupon.trim() && couponAllowedPrices.includes(priceId)) {
+    items.discounts.push({ coupon });
+  }
+
   try {
-    const response = await fetch(`${API_BASE_URL}/api/checkout`, {
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/checkout`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      // Send the data exactly as-is:
-      body: JSON.stringify(itemsToCheckout),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items })
     });
 
     const data = await response.json();
 
-    if (!response.ok) {
-      throw new Error(data.error || "Failed to create checkout session");
-    }
-
     if (!data.url) {
-      throw new Error("Stripe did not return a checkout URL");
+      throw new Error("No checkout URL returned");
     }
 
-    // Redirect user to Stripe checkout page
     window.location.href = data.url;
-
-  } catch (error) {
-    console.error("redirectToCheckout error:", error);
-    throw error; // Let Pricing.jsx show your toast
+  } catch (err) {
+    console.error("Checkout Error:", err);
+    throw err;
   }
 }
